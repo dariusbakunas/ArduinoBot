@@ -1,4 +1,14 @@
 XBee 2 communication for Magician Chassis bot
 
 
+Chasis:
 https://www.sparkfun.com/products/10825
+
+XBee Library for arduino:
+https://code.google.com/p/xbee-arduino/
+
+XBee Python Library:
+https://code.google.com/p/python-xbee/
+
+XBee 2 radio:
+https://www.sparkfun.com/products/10414

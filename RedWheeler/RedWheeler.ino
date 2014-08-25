@@ -2,12 +2,6 @@
 
 #define CMD_VEL 1
 
-#define CMD_FWD 1
-#define CMD_BCK 2
-#define CMD_LFT 3
-#define CMD_RHT 4
-
-
 //ardumoto shield
 int pwm_a = 3;
 int pwm_b = 11;
@@ -38,7 +32,14 @@ void setup() {
   analogWrite(pwm_b, 0);
 }
 
-void apply_motor(int linear, int angular){
+void set_motor_speed(speed_a, speed_b){
+  analogWrite(pwm_a, speed_a);
+  analogWrite(pwm_b, speed_b);
+}
+
+void apply_motor(int linear, int angular
+  stopped = false;
+
   if (linear == 1){
     forward();
   } else if (linear == 2){
@@ -50,6 +51,7 @@ void apply_motor(int linear, int angular){
       left();
     } else {
       halt();
+      stopped = true;
     }
   }
 }
@@ -99,45 +101,33 @@ void reset_time(){
   cmd_start_time = millis();
 }
 
-void forward() //full speed forward
+void forward()
 {     
-  last_cmd = CMD_FWD;
   digitalWrite(dir_a, HIGH);
   digitalWrite(dir_b, HIGH);
-  analogWrite(pwm_a, 255);
-  analogWrite(pwm_b, 255);
-  stopped = false;
+  set_motor_speed(255, 255);
 }
 
 void backward(){
-  last_cmd = CMD_BCK;
   digitalWrite(dir_a, LOW);
   digitalWrite(dir_b, LOW);
-  analogWrite(pwm_a, 255);
-  analogWrite(pwm_b, 255);
-  stopped = false;
+  set_motor_speed(255, 255);
 }
 
 void left(){
   digitalWrite(dir_a, HIGH);
   digitalWrite(dir_b, LOW);
-  analogWrite(pwm_a, 255);
-  analogWrite(pwm_b, 255);
-  stopped = false;
+  set_motor_speed(255, 255);
 }
 
 void right(){
   digitalWrite(dir_b, HIGH);
   digitalWrite(dir_a, LOW);
-  analogWrite(pwm_b, 255);
-  analogWrite(pwm_a, 255);
-  stopped = false;
+  set_motor_speed(255, 255);
 }
 
 void halt(){
   digitalWrite(dir_a, LOW);
   digitalWrite(dir_b, LOW);
-  analogWrite(pwm_a, 0);
-  analogWrite(pwm_b, 0);
-  stopped = true;
+  set_motor_speed(0, 0);
 }

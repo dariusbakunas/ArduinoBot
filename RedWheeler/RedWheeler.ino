@@ -2,11 +2,19 @@
 
 #define CMD_VEL 1
 
+#define CMD_FWD 1
+#define CMD_BCK 2
+#define CMD_LFT 3
+#define CMD_RHT 4
+
+
 //ardumoto shield
 int pwm_a = 3;
 int pwm_b = 11;
 int dir_a = 12;
 int dir_b = 13;
+
+boolean stopped = false;
 
 //xbee shield
 XBee xbee = XBee();
@@ -14,6 +22,8 @@ XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
 ModemStatusResponse msr = ModemStatusResponse();
 int command;
+unsigned long cmd_start_time;
+unsigned long last_cmd;
 
 void setup() {
   Serial.begin(9600);
@@ -45,7 +55,8 @@ void apply_motor(int linear, int angular){
 }
 
 void loop() {
-  int linear, angular;
+  int linear, angular; 
+  int cmd_duration = 0; 
   xbee.readPacket();
   
   if (xbee.getResponse().isAvailable()){
@@ -58,6 +69,7 @@ void loop() {
       switch(command){
         case CMD_VEL:
           //cmd_vel
+          reset_time();  //new command
           linear = rx.getData(1);
           angular = rx.getData(2);
           apply_motor(linear, angular);
@@ -74,33 +86,52 @@ void loop() {
       }
     }
   }
+  
+  //check time since last command
+  cmd_duration = millis() - cmd_start_time;
+  
+  //stop if there was no command for more than 250ms
+  if (!stopped && cmd_duration >= 500)
+    halt();
+}
+
+void reset_time(){
+  cmd_start_time = millis();
 }
 
 void forward() //full speed forward
-{
+{     
+  last_cmd = CMD_FWD;
   digitalWrite(dir_a, HIGH);
   digitalWrite(dir_b, HIGH);
   analogWrite(pwm_a, 255);
   analogWrite(pwm_b, 255);
+  stopped = false;
 }
 
 void backward(){
+  last_cmd = CMD_BCK;
   digitalWrite(dir_a, LOW);
   digitalWrite(dir_b, LOW);
   analogWrite(pwm_a, 255);
   analogWrite(pwm_b, 255);
+  stopped = false;
 }
 
 void left(){
   digitalWrite(dir_a, HIGH);
+  digitalWrite(dir_b, LOW);
   analogWrite(pwm_a, 255);
-  analogWrite(pwm_b, 0);
+  analogWrite(pwm_b, 255);
+  stopped = false;
 }
 
 void right(){
   digitalWrite(dir_b, HIGH);
+  digitalWrite(dir_a, LOW);
   analogWrite(pwm_b, 255);
-  analogWrite(pwm_a, 0);
+  analogWrite(pwm_a, 255);
+  stopped = false;
 }
 
 void halt(){
@@ -108,4 +139,5 @@ void halt(){
   digitalWrite(dir_b, LOW);
   analogWrite(pwm_a, 0);
   analogWrite(pwm_b, 0);
+  stopped = true;
 }

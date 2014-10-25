@@ -32,12 +32,12 @@ void setup() {
   analogWrite(pwm_b, 0);
 }
 
-void set_motor_speed(speed_a, speed_b){
+void set_motor_speed(int speed_a, int speed_b){
   analogWrite(pwm_a, speed_a);
   analogWrite(pwm_b, speed_b);
 }
 
-void apply_motor(int linear, int angular
+void apply_motor(int linear, int angular){
   stopped = false;
 
   if (linear == 1){

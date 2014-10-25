@@ -1,12 +1,22 @@
 #include <XBee.h>
 
+//commands
 #define CMD_VEL 1
 
 //ardumoto shield
-int pwm_a = 3;
-int pwm_b = 11;
-int dir_a = 12;
-int dir_b = 13;
+const byte PWM_A = 3;
+const byte PWM_B = 11;
+const byte DIR_A = 12;
+const byte DIR_B = 13;
+
+// Clockwise and counter-clockwise definitions.
+// Depending on how you wired your motors, you may need to swap.
+#define CW  1
+#define CCW 0
+
+// Motor definitions to make life easier:
+#define MOTOR_A 0
+#define MOTOR_B 1
 
 boolean stopped = false;
 
@@ -23,34 +33,24 @@ void setup() {
   Serial.begin(9600);
   xbee.begin(Serial);
   
-  pinMode(pwm_a, OUTPUT);
-  pinMode(pwm_b, OUTPUT);
-  pinMode(dir_a, OUTPUT);
-  pinMode(dir_b, OUTPUT);
-  
-  analogWrite(pwm_a, 0);
-  analogWrite(pwm_b, 0);
-}
-
-void set_motor_speed(int speed_a, int speed_b){
-  analogWrite(pwm_a, speed_a);
-  analogWrite(pwm_b, speed_b);
+  setupMotorShield();
 }
 
 void apply_motor(int linear, int angular){
   stopped = false;
 
   if (linear == 1){
-    forward();
+    goForward();
   } else if (linear == 2){
-    backward();
+    goBackward();
   } else if (linear == 0){
     if (angular == 1){
-      right();
+      goRight();
     } else if (angular == 2){
-      left();
+      goLeft();
     } else {
-      halt();
+      stopMotor(MOTOR_A);
+      stopMotor(MOTOR_B);
       stopped = true;
     }
   }
@@ -76,6 +76,8 @@ void loop() {
           angular = rx.getData(2);
           apply_motor(linear, angular);
           break;
+        default:
+          break;
       }
       
     } else if (xbee.getResponse().getApiId() == MODEM_STATUS_RESPONSE){
@@ -92,42 +94,64 @@ void loop() {
   //check time since last command
   cmd_duration = millis() - cmd_start_time;
   
-  //stop if there was no command for more than 250ms
-  if (!stopped && cmd_duration >= 500)
-    halt();
+  //stop if there was no command for more than 800ms
+  if (!stopped && cmd_duration >= 800){
+    stopMotor(MOTOR_A);
+    stopMotor(MOTOR_B);
+  }
 }
 
 void reset_time(){
   cmd_start_time = millis();
 }
 
-void forward()
-{     
-  digitalWrite(dir_a, HIGH);
-  digitalWrite(dir_b, HIGH);
-  set_motor_speed(255, 255);
+// driveArdumoto drives 'motor' in 'dir' direction at 'spd' speed
+void driveMotor(byte motor, byte dir, byte spd){
+  if (motor == MOTOR_A){
+    digitalWrite(DIR_A, dir);
+    analogWrite(PWM_A, spd);
+  }else if (motor == MOTOR_B){
+    digitalWrite(DIR_B, dir);
+    analogWrite(PWM_B, spd);
+  }
 }
 
-void backward(){
-  digitalWrite(dir_a, LOW);
-  digitalWrite(dir_b, LOW);
-  set_motor_speed(255, 255);
+void setupMotorShield(){
+  //all pins should be setup as outputs
+  pinMode(PWM_A, OUTPUT);
+  pinMode(PWM_B, OUTPUT);
+  pinMode(DIR_A, OUTPUT);
+  pinMode(DIR_B, OUTPUT);
+  
+  //initialize all pins as low:
+  digitalWrite(PWM_A, LOW);
+  digitalWrite(PWM_B, LOW);
+  digitalWrite(DIR_A, LOW);
+  digitalWrite(DIR_B, LOW);
 }
 
-void left(){
-  digitalWrite(dir_a, HIGH);
-  digitalWrite(dir_b, LOW);
-  set_motor_speed(255, 255);
+void goForward()
+{ 
+  driveMotor(MOTOR_A, CW, 255);
+  driveMotor(MOTOR_B, CW, 255);  
 }
 
-void right(){
-  digitalWrite(dir_b, HIGH);
-  digitalWrite(dir_a, LOW);
-  set_motor_speed(255, 255);
+void goBackward(){
+  driveMotor(MOTOR_A, CCW, 255);
+  driveMotor(MOTOR_B, CCW, 255);
 }
 
-void halt(){
-  digitalWrite(dir_a, LOW);
-  digitalWrite(dir_b, LOW);
-  set_motor_speed(0, 0);
+void goLeft(){
+  driveMotor(MOTOR_A, CW, 255);
+  driveMotor(MOTOR_B, CCW, 255);
+}
+
+void goRight(){
+  driveMotor(MOTOR_A, CCW, 255);
+  driveMotor(MOTOR_B, CW, 255);
+}
+
+void stopMotor(byte motor)
+{
+  driveMotor(motor, 0, 0);
 }
